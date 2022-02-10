@@ -1,0 +1,84 @@
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
+
+import java.util.AbstractMap.SimpleEntry;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collector;
+
+public class FunctionUtils {
+	private FunctionUtils() {
+	}
+
+	public static <K, V> Consumer<Entry<K, V>> c(BiConsumer<? super K, ? super V> bif) {
+		return entry -> bif.accept(entry.getKey(), entry.getValue());
+	}
+
+	public static <K, V, R> Function<Entry<K, V>, R> f(BiFunction<? super K, ? super V, R> bif) {
+		return entry -> bif.apply(entry.getKey(), entry.getValue());
+	}
+
+	public static <K, V> Predicate<Entry<K, V>> p(BiPredicate<? super K, ? super V> bif) {
+		return entry -> bif.test(entry.getKey(), entry.getValue());
+	}
+
+	public static <K, V> Collector<Entry<K, V>, ?, Map<K, V>> collectToMap() {
+		return toMap(Entry<K, V>::getKey, Entry<K, V>::getValue);
+	}
+
+	public static <T> void forEachWithIndex(Iterable<T> source, BiConsumer<Integer, T> consumer) {
+		Integer i = 0;
+		for (T item : source) {
+			consumer.accept(i, item);
+			i++;
+		}
+	}
+
+	public static <S, U> Function<S, Entry<S, U>> toEntryWithValue(Function<S, U> value) {
+		return input -> new SimpleEntry<>(input, value.apply(input));
+	}
+
+	public static <S, U> Function<S, Entry<S, U>> toEntryWithValue(U value) {
+		return input -> new SimpleEntry<>(input, value);
+	}
+
+	public static <S, T, U> Function<S, Entry<T, U>> toEntry(Function<S, T> keyMapper, U value) {
+		return input -> new SimpleEntry<>(keyMapper.apply(input), value);
+	}
+
+	public static <S, T, U> Function<S, Entry<T, U>> toEntry(Function<S, T> keyMapper, Function<S, U> valueMapper) {
+		return input -> new SimpleEntry<>(keyMapper.apply(input), valueMapper.apply(input));
+	}
+
+	public static <R, S, T> Function<Entry<R, List<S>>, Entry<R, List<T>>> flatMapValue(Function<S, T> valueMapper) {
+		return input -> new SimpleEntry<>(input.getKey(), input.getValue().stream().map(valueMapper).collect(toList()));
+
+	}
+
+	public static <R, S, T> Function<Entry<R, S>, Entry<R, T>> mapValue(Function<S, T> valueMapper) {
+		return input -> new SimpleEntry<>(input.getKey(), valueMapper.apply(input.getValue()));
+	}
+
+	public static <R, S, T> Function<Entry<S, R>, Entry<T, R>> mapKey(Function<S, T> keyMapper) {
+		return input -> new SimpleEntry<>(keyMapper.apply(input.getKey()), input.getValue());
+	}
+
+	public static <R, S, T, U> Function<Entry<R, S>, Entry<T, U>> mapEntry(Function<R, T> keyMapper, Function<S, U> valueMapper) {
+		return entryInput -> new SimpleEntry<>(keyMapper.apply(entryInput.getKey()), valueMapper.apply(entryInput.getValue()));
+	}
+
+	public static <K, V> Predicate<Entry<K, V>> valeurNonNull() {
+		return entry -> entry.getValue() != null;
+	}
+
+	public static <K, V> Predicate<Entry<K, V>> byValue(Predicate<V> predicate) {
+		return entry -> predicate.test(entry.getValue());
+	}
+}
